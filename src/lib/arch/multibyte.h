@@ -24,10 +24,10 @@
 #include <climits>
 #include <cstring>
 #include <cstdlib>
-#if HAVE_LOCALE_H
+#if HAVE_LOCALE_H || defined(_WIN32)
 #    include <locale.h>
 #endif
-#if HAVE_WCHAR_H || defined(_MSC_VER)
+#if HAVE_WCHAR_H || defined(_MSC_VER) || defined(_WIN32)
 #    include <wchar.h>
 #elif __APPLE__
     // wtf?  Darwin puts mbtowc() et al. in stdlib

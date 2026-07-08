@@ -275,18 +275,33 @@ if (UNIX)
     endif()
 
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /D _BIND_TO_CURRENT_VCLIBS_VERSION=1")
-    set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /O2 /Ob2")
+    if (MSVC)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /D _BIND_TO_CURRENT_VCLIBS_VERSION=1")
+        set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /O2 /Ob2")
 
-    list (APPEND libs Wtsapi32 Userenv Wininet comsuppw Shlwapi)
+        list (APPEND libs Wtsapi32 Userenv Wininet comsuppw Shlwapi)
 
-    add_definitions (
-        /DWIN32
-        /D_WINDOWS
-        /D_CRT_SECURE_NO_WARNINGS
-        /DSYNERGY_VERSION=\"${SYNERGY_VERSION}\"
-        /D_XKEYCHECK_H
-    )
+        add_definitions (
+            /DWIN32
+            /D_WINDOWS
+            /D_CRT_SECURE_NO_WARNINGS
+            /DSYNERGY_VERSION=\"${SYNERGY_VERSION}\"
+            /D_XKEYCHECK_H
+        )
+    else()
+        list (APPEND libs
+            wtsapi32 userenv wininet shlwapi ws2_32 psapi ole32 uuid
+            shell32 gdi32 user32 advapi32
+        )
+
+        add_definitions (
+            -DWIN32
+            -D_WINDOWS
+            -D_CRT_SECURE_NO_WARNINGS
+            -DSYNERGY_VERSION=\"${SYNERGY_VERSION}\"
+            -D_XKEYCHECK_H
+        )
+    endif()
 endif()
 
 #

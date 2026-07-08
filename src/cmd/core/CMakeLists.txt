@@ -14,8 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 add_executable(synergy-core main.cpp)
-target_link_libraries(synergy-core
-    arch base client common io mt net platform server core ${libs})
+if (WIN32 AND NOT MSVC)
+    target_link_libraries(synergy-core
+        -Wl,--start-group
+        arch base client common io mt net platform server core shared
+        -Wl,--end-group
+        ${libs})
+else()
+    target_link_libraries(synergy-core
+        arch base client common io mt net platform server core ${libs})
+endif()
 
 if (SYNERGY_CORE_INSTALL)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

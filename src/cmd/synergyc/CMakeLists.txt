@@ -38,5 +38,13 @@ if (SYNERGY_ADD_HEADERS)
 endif()
 
 add_executable(synergyc ${sources})
-target_link_libraries(synergyc
-    arch base client common io mt net platform server core ${libs})
+if (WIN32 AND NOT MSVC)
+    target_link_libraries(synergyc
+        -Wl,--start-group
+        arch base client common io mt net platform server core shared
+        -Wl,--end-group
+        ${libs})
+else()
+    target_link_libraries(synergyc
+        arch base client common io mt net platform server core ${libs})
+endif()

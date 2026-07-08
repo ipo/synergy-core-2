@@ -27,7 +27,7 @@
 #include "core/ToolArgs.h"
 
 #ifdef WINAPI_MSWINDOWS
-#include <VersionHelpers.h>
+#include <versionhelpers.h>
 #endif
  
 ArgsBase* ArgParser::m_argsBase = nullptr;
@@ -109,6 +109,10 @@ ArgParser::parseClientArgs(ClientArgs& args, int argc, const char* const* argv)
             LOG((CLOG_PRINT "%s: unrecognized option `%s'" BYE, args.m_pname, argv[i], args.m_pname));
             return false;
         }
+    }
+
+    if (args.m_shouldExit) {
+        return true;
     }
 
     // exactly one non-option argument (server-address)
