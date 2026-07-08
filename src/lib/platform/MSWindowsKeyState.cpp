@@ -205,7 +205,7 @@ const KeyID				MSWindowsKeyState::s_virtualKey[] =
 	/* 0x0a2 */ { kKeyControl_L },	// VK_LCONTROL
 	/* 0x0a3 */ { kKeyControl_R },	// VK_RCONTROL
 	/* 0x0a4 */ { kKeyAlt_L },		// VK_LMENU
-	/* 0x0a5 */ { kKeyAlt_R },		// VK_RMENU
+	/* 0x0a5 */ { kKeyAltGr },		// VK_RMENU
 	/* 0x0a6 */ { kKeyNone },		// VK_BROWSER_BACK
 	/* 0x0a7 */ { kKeyNone },		// VK_BROWSER_FORWARD
 	/* 0x0a8 */ { kKeyNone },		// VK_BROWSER_REFRESH
@@ -462,7 +462,7 @@ const KeyID				MSWindowsKeyState::s_virtualKey[] =
 	/* 0x1a2 */ { kKeyControl_L },	// VK_LCONTROL
 	/* 0x1a3 */ { kKeyControl_R },	// VK_RCONTROL
 	/* 0x1a4 */ { kKeyAlt_L },		// VK_LMENU
-	/* 0x1a5 */ { kKeyAlt_R },		// VK_RMENU
+	/* 0x1a5 */ { kKeyAltGr },		// VK_RMENU
 	/* 0x1a6 */ { kKeyWWWBack },	// VK_BROWSER_BACK
 	/* 0x1a7 */ { kKeyWWWForward },	// VK_BROWSER_FORWARD
 	/* 0x1a8 */ { kKeyWWWRefresh },	// VK_BROWSER_REFRESH
@@ -896,9 +896,18 @@ MSWindowsKeyState::pollActiveGroup() const
 	// get group
 	GroupMap::const_iterator i = m_groupMap.find(hkl);
 	if (i == m_groupMap.end()) {
-		LOG((CLOG_DEBUG1 "can't find keyboard layout %08x", hkl));
+		LOG((CLOG_INFO "win32 pollActiveGroup: can't find keyboard layout hwnd=%p thread=%lu hkl=%p",
+			reinterpret_cast<void*>(targetWindow),
+			static_cast<unsigned long>(targetThread),
+			reinterpret_cast<void*>(hkl)));
 		return 0;
 	}
+
+	LOG((CLOG_INFO "win32 pollActiveGroup: hwnd=%p thread=%lu hkl=%p group=%d",
+		reinterpret_cast<void*>(targetWindow),
+		static_cast<unsigned long>(targetThread),
+		reinterpret_cast<void*>(hkl),
+		i->second));
 
 	return i->second;
 }
@@ -943,6 +952,12 @@ MSWindowsKeyState::getKeyMap(synergy::KeyMap& keyMap)
 	for (SInt32 g = 0; g < numGroups; ++g) {
 		item.m_group = g;
 		ActivateKeyboardLayout(m_groups[g], 0);
+		char klid[KL_NAMELENGTH] = {0};
+		GetKeyboardLayoutNameA(klid);
+		LOG((CLOG_INFO "win32 keymap group %d: hkl=%p klid=%s",
+			g,
+			reinterpret_cast<void*>(m_groups[g]),
+			klid));
 
 		// clear tables
 		memset(m_buttonToVK, 0, sizeof(m_buttonToVK));
@@ -1136,8 +1151,7 @@ MSWindowsKeyState::getKeyMap(synergy::KeyMap& keyMap)
 					static const Modifier modifiers[] = {
 						{ VK_SHIFT,   VK_SHIFT,   0x80u, KeyModifierShift    },
 						{ VK_CAPITAL, VK_CAPITAL, 0x01u, KeyModifierCapsLock },
-						{ VK_CONTROL, VK_MENU,    0x80u, KeyModifierControl |
-														 KeyModifierAlt      }
+						{ VK_CONTROL, VK_MENU,    0x80u, KeyModifierAltGr   }
 					};
 					static const size_t s_numModifiers =
 						sizeof(modifiers) / sizeof(modifiers[0]);
@@ -1327,13 +1341,25 @@ void
 MSWindowsKeyState::setWindowGroup(SInt32 group)
 {
 	HWND targetWindow = GetForegroundWindow();
+	DWORD targetThread = GetWindowThreadProcessId(targetWindow, NULL);
+	HKL before = GetKeyboardLayout(targetThread);
 
 	bool sysCharSet = true;
 	// XXX -- determine if m_groups[group] can be used with the system
 	// character set.
 
-	PostMessage(targetWindow, WM_INPUTLANGCHANGEREQUEST,
+	LOG((CLOG_INFO "win32 setWindowGroup: hwnd=%p thread=%lu group=%d targetHkl=%p beforeHkl=%p",
+		reinterpret_cast<void*>(targetWindow),
+		static_cast<unsigned long>(targetThread),
+		group,
+		reinterpret_cast<void*>(m_groups[group]),
+		reinterpret_cast<void*>(before)));
+
+	BOOL posted = PostMessage(targetWindow, WM_INPUTLANGCHANGEREQUEST,
 								sysCharSet ? 1 : 0, (LPARAM)m_groups[group]);
+	LOG((CLOG_INFO "win32 setWindowGroup: posted WM_INPUTLANGCHANGEREQUEST result=%d error=%lu",
+		posted,
+		posted ? 0ul : static_cast<unsigned long>(GetLastError())));
 
 	// XXX -- use a short delay to let the target window process the message
 	// before it sees the keyboard events.  i'm not sure why this is

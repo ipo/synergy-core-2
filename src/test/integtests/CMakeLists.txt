@@ -68,4 +68,4 @@ endif()
 
 add_executable(integtests ${sources})
 target_link_libraries(integtests
-    arch base client common io mt net platform server core gtest gmock ${libs})
+    arch base client common io mt net platform server core gtest gmock io shared ${libs})

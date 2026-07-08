@@ -29,11 +29,93 @@
 #include "test/global/gtest.h"
 #include "test/global/gmock.h"
 
+#include <vector>
+
 // wParam = flags, HIBYTE(lParam) = virtual key, LOBYTE(lParam) = scan code
 #define SYNERGY_MSG_FAKE_KEY		SYNERGY_HOOK_LAST_MSG + 4
 
 using ::testing::_;
 using ::testing::NiceMock;
+
+namespace {
+
+const KeyID kAtSign = 0x0040;
+const KeyModifierMask kControlAlt = KeyModifierControl | KeyModifierAlt;
+
+class TestableMSWindowsKeyState : public MSWindowsKeyState {
+public:
+	TestableMSWindowsKeyState(
+		MSWindowsDesks* desks, void* eventTarget, IEventQueue* events,
+		synergy::KeyMap& keyMap) :
+		MSWindowsKeyState(desks, eventTarget, events, keyMap)
+	{
+	}
+
+	using MSWindowsKeyState::getKeyMap;
+};
+
+struct AtSignGroups {
+	std::vector<SInt32> altGrGroups;
+	std::vector<SInt32> shiftGroups;
+};
+
+bool
+containsGroup(const std::vector<SInt32>& groups, SInt32 group)
+{
+	for (std::vector<SInt32>::const_iterator i = groups.begin();
+		 i != groups.end(); ++i) {
+		if (*i == group) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void
+collectAtSignGroups(KeyID id, SInt32 group,
+	synergy::KeyMap::KeyItem& item, void* userData)
+{
+	if (id != kAtSign) {
+		return;
+	}
+
+	AtSignGroups* groups = static_cast<AtSignGroups*>(userData);
+	const bool requiresAltGr =
+		(item.m_required & KeyModifierAltGr) == KeyModifierAltGr &&
+		(item.m_sensitive & KeyModifierAltGr) == KeyModifierAltGr;
+	const bool requiresControlAlt =
+		(item.m_required & kControlAlt) == kControlAlt &&
+		(item.m_sensitive & kControlAlt) == kControlAlt;
+	const bool requiresShift =
+		(item.m_required & KeyModifierShift) == KeyModifierShift &&
+		(item.m_sensitive & KeyModifierShift) == KeyModifierShift &&
+		(item.m_required & (KeyModifierAltGr | kControlAlt)) == 0;
+
+	if ((requiresAltGr || requiresControlAlt) &&
+		!containsGroup(groups->altGrGroups, group)) {
+		groups->altGrGroups.push_back(group);
+	}
+	if (requiresShift && !containsGroup(groups->shiftGroups, group)) {
+		groups->shiftGroups.push_back(group);
+	}
+}
+
+bool
+findNonRestoreGroupChange(const synergy::KeyMap::Keystrokes& keys,
+	SInt32* group)
+{
+	for (synergy::KeyMap::Keystrokes::const_iterator i = keys.begin();
+		 i != keys.end(); ++i) {
+		if (i->m_type == synergy::KeyMap::Keystroke::kGroup &&
+			!i->m_data.m_group.m_restore) {
+			*group = i->m_data.m_group.m_group;
+			return true;
+		}
+	}
+	return false;
+}
+
+} // namespace
 
 class MSWindowsKeyStateTests : public ::testing::Test
 {
@@ -122,6 +204,54 @@ TEST_F(MSWindowsKeyStateTests, saveModifiers_noModifiers_savedModifiers0)
 	delete desks;
 }
 
+TEST_F(MSWindowsKeyStateTests, generatedSwedishAltGrAtSign_doesNotSwitchGroups)
+{
+	NiceMock<MockEventQueue> eventQueue;
+	MSWindowsDesks* desks = newDesks(&eventQueue);
+	synergy::KeyMap keyMap;
+	TestableMSWindowsKeyState keyState(
+		desks, getEventTarget(), &eventQueue, keyMap);
+
+	keyState.getKeyMap(keyMap);
+	keyMap.finish();
+
+	AtSignGroups groups;
+	keyMap.foreachKey(&collectAtSignGroups, &groups);
+	if (groups.altGrGroups.empty() || groups.shiftGroups.empty()) {
+		SUCCEED() <<
+			"test requires loaded Swedish-like AltGr @ layout and US-like Shift+2 @ layout";
+		delete desks;
+		return;
+	}
+
+	const SInt32 startingGroup = groups.altGrGroups.front();
+	synergy::KeyMap::ModifierToKeys activeModifiers;
+	KeyModifierMask currentState = 0;
+
+	synergy::KeyMap::Keystrokes altGrKeys;
+	const synergy::KeyMap::KeyItem* altGrItem = keyMap.mapKey(
+		altGrKeys, kKeyAltGr, startingGroup, activeModifiers,
+		currentState, 0, false);
+	EXPECT_NE(static_cast<const synergy::KeyMap::KeyItem*>(NULL), altGrItem) <<
+		"Windows Right Alt must be modeled as AltGr for AltGr character mapping";
+
+	synergy::KeyMap::Keystrokes atKeys;
+	const synergy::KeyMap::KeyItem* atItem = keyMap.mapKey(
+		atKeys, kAtSign, startingGroup, activeModifiers,
+		currentState, KeyModifierAltGr, false);
+
+	ASSERT_NE(static_cast<const synergy::KeyMap::KeyItem*>(NULL), atItem);
+	EXPECT_EQ(startingGroup, atItem->m_group) <<
+		"AltGr+2/@ should stay in the Swedish AltGr group";
+
+	SInt32 switchedGroup = -1;
+	EXPECT_FALSE(findNonRestoreGroupChange(atKeys, &switchedGroup)) <<
+		"AltGr+2/@ emitted a non-restore group change to group " <<
+		switchedGroup;
+
+	delete desks;
+}
+
 TEST_F(MSWindowsKeyStateTests, testKoreanLocale_inputModeKey_resultCorrectKeyID)
 {
 	NiceMock<MockEventQueue> eventQueue;
@@ -141,4 +271,3 @@ TEST_F(MSWindowsKeyStateTests, testKoreanLocale_inputModeKey_resultCorrectKeyID)
 
 	delete desks;
 }
-

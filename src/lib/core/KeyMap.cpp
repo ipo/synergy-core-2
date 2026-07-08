@@ -540,7 +540,10 @@ KeyMap::mapCommandKey(Keystrokes& keys, KeyID id, SInt32 group,
             KeyModifierMask requiredIgnoreShiftMask = item.m_required & ~KeyModifierShift;
             if ((item.m_required & desiredShiftMask) == (item.m_sensitive & desiredShiftMask) &&
                 ((requiredIgnoreShiftMask & desiredMask) == requiredIgnoreShiftMask)) {
-                LOG((CLOG_INFO "found key in group %d", effectiveGroup));
+                LOG((CLOG_INFO "command key match id=%04x group=%d button=%03x client=%08x required=%04x sensitive=%04x generates=%04x desired=%04x current=%04x",
+                    id, effectiveGroup, item.m_button, item.m_client,
+                    item.m_required, item.m_sensitive, item.m_generates,
+                    desiredMask, currentState));
                 keyItem = &item;
                 break;
             }
