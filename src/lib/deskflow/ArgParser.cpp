@@ -25,6 +25,9 @@
 #include "deskflow/ServerArgs.h"
 #include "deskflow/ToolArgs.h"
 
+#include <cmath>
+#include <cstdlib>
+
 #ifdef WINAPI_MSWINDOWS
 #include <VersionHelpers.h>
 #endif
@@ -93,6 +96,14 @@ bool ArgParser::parseClientArgs(deskflow::ClientArgs &args, int argc, const char
     } else if (isArg(i, argc, argv, nullptr, "--yscroll", 1)) {
       // define scroll
       args.m_yscroll = atoi(argv[++i]);
+    } else if (isArg(i, argc, argv, nullptr, "--relative-mouse-scale", 1)) {
+      char *end = nullptr;
+      const double scale = std::strtod(argv[++i], &end);
+      if (end == argv[i] || *end != '\0' || !std::isfinite(scale) || scale <= 0.0) {
+        LOG((CLOG_CRIT "%s: --relative-mouse-scale must be a positive number" BYE, args.m_pname, args.m_pname));
+        return false;
+      }
+      args.m_relativeMouseScale = scale;
     } else if (isArg(i, argc, argv, nullptr, "--sync-language")) {
       args.m_enableLangSync = true;
     } else if (isArg(i, argc, argv, nullptr, "--invert-scroll")) {

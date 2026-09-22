@@ -824,6 +824,12 @@ void Config::readSectionScreens(ConfigReadContext &s)
         addOption(screen, kOptionScreenSwitchCornerSize, s.parseInt(value));
       } else if (name == "preserveFocus") {
         addOption(screen, kOptionScreenPreserveFocus, s.parseBoolean(value));
+      } else if (name == "mouseScale") {
+        const OptionValue mouseScale = s.parseInt(value);
+        if (mouseScale <= 0) {
+          throw XConfigRead(s, "mouseScale must be a positive percentage");
+        }
+        addOption(screen, kOptionMouseScale, mouseScale);
       } else {
         // unknown argument
         throw XConfigRead(s, "unknown argument \"%{1}\"", name);
@@ -1268,6 +1274,9 @@ const char *Config::getOptionName(OptionID id)
   if (id == kOptionClipboardSharingSize) {
     return "clipboardSharingSize";
   }
+  if (id == kOptionMouseScale) {
+    return "mouseScale";
+  }
   return NULL;
 }
 
@@ -1306,7 +1315,7 @@ String Config::getOptionValue(OptionID id, OptionValue value)
     }
   }
   if (id == kOptionHeartbeat || id == kOptionScreenSwitchCornerSize || id == kOptionScreenSwitchDelay ||
-      id == kOptionScreenSwitchTwoTap) {
+      id == kOptionScreenSwitchTwoTap || id == kOptionMouseScale) {
     return deskflow::string::sprintf("%d", value);
   }
   if (id == kOptionScreenSwitchCorners) {

@@ -21,7 +21,9 @@
 #include <thread>
 
 #if WINAPI_XWINDOWS
+#if !defined(DESKFLOW_MINIMAL_BUILD)
 #include "deskflow/unix/X11LayoutsParser.h"
+#endif
 #include <X11/XKBlib.h>
 #elif WINAPI_CARBON
 #include <Carbon/Carbon.h>
@@ -63,7 +65,7 @@ std::vector<String> AppUtilUnix::getKeyboardLayoutList()
 {
   std::vector<String> layoutLangCodes;
 
-#if WINAPI_XWINDOWS
+#if WINAPI_XWINDOWS && !defined(DESKFLOW_MINIMAL_BUILD)
   layoutLangCodes = X11LayoutsParser::getX11LanguageList("/usr/share/X11/xkb/rules/evdev.xml");
 #elif WINAPI_CARBON
   CFStringRef keys[] = {kTISPropertyInputSourceCategory};
@@ -99,7 +101,7 @@ std::vector<String> AppUtilUnix::getKeyboardLayoutList()
 String AppUtilUnix::getCurrentLanguageCode()
 {
   String result = "";
-#if WINAPI_XWINDOWS
+#if WINAPI_XWINDOWS && !defined(DESKFLOW_MINIMAL_BUILD)
 
   auto display = XOpenDisplay(nullptr);
   if (!display) {

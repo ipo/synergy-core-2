@@ -167,7 +167,8 @@ bool SslApi::isTrustedFingerprint(const std::string &fingerprint) const
 
   // check if this fingerprint exist
   std::ifstream file;
-  file.open(deskflow::filesystem::path(trustedServersFilename));
+  const auto trustedServersPath = deskflow::filesystem::path(trustedServersFilename);
+  file.open(trustedServersPath.c_str());
 
   bool isValid = false;
   if (file.is_open()) {
@@ -236,7 +237,8 @@ bool SslApi::isCertificateExists(const std::string &filename) const
   bool result = (!filename.empty());
 
   if (result) {
-    std::ifstream file(deskflow::filesystem::path(filename));
+    const auto filePath = deskflow::filesystem::path(filename);
+    std::ifstream file(filePath.c_str());
     result = file.good();
 
     if (!result) {

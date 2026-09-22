@@ -24,6 +24,7 @@
 #include "base/XBase.h"
 #include "client/Client.h"
 #include "deskflow/AppUtil.h"
+#include "deskflow/ClientApp.h"
 #include "deskflow/Clipboard.h"
 #include "deskflow/ClipboardChunk.h"
 #include "deskflow/FileChunk.h"
@@ -581,7 +582,8 @@ void ServerProxy::keyDown(UInt16 id, UInt16 mask, UInt16 button, const String &l
 {
   // get mouse up to date
   flushCompressedMouse();
-  setActiveServerLanguage(lang);
+  const String keyLanguage = ClientApp::instance().args().m_enableLangSync ? lang : "";
+  setActiveServerLanguage(keyLanguage);
 
   // translate
   KeyID id2 = translateKey(static_cast<KeyID>(id));
@@ -590,7 +592,7 @@ void ServerProxy::keyDown(UInt16 id, UInt16 mask, UInt16 button, const String &l
     LOG((CLOG_DEBUG1 "key down translated to id=0x%08x, mask=0x%04x", id2, mask2));
 
   // forward
-  m_client->keyDown(id2, mask2, button, lang);
+  m_client->keyDown(id2, mask2, button, keyLanguage);
 }
 
 void ServerProxy::keyRepeat()
@@ -615,7 +617,8 @@ void ServerProxy::keyRepeat()
     LOG((CLOG_DEBUG1 "key repeat translated to id=0x%08x, mask=0x%04x", id2, mask2));
 
   // forward
-  m_client->keyRepeat(id2, mask2, count, button, lang);
+  const String keyLanguage = ClientApp::instance().args().m_enableLangSync ? lang : "";
+  m_client->keyRepeat(id2, mask2, count, button, keyLanguage);
 }
 
 void ServerProxy::keyUp()
@@ -800,6 +803,13 @@ void ServerProxy::setOptions()
     }
 
     if (id != kKeyModifierIDNull) {
+#if WINAPI_MSWINDOWS
+      if (id == kKeyModifierIDAltGr && options[i + 1] == kKeyModifierIDAlt) {
+        LOG((CLOG_NOTE "preserving AltGr modifier mapping on Windows"));
+        m_modifierTranslationTable[id] = id;
+        continue;
+      }
+#endif
       m_modifierTranslationTable[id] = static_cast<KeyModifierID>(options[i + 1]);
       LOG((CLOG_DEBUG1 "modifier %d mapped to %d", id, m_modifierTranslationTable[id]));
     }

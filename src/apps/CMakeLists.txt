@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-add_subdirectory(deskflow-daemon)
+if(NOT BUILD_MINIMAL_CLIENT)
+  add_subdirectory(deskflow-daemon)
+endif()
 
 if(BUILD_UNIFIED)
   add_subdirectory(deskflow-core)

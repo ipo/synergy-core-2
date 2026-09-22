@@ -23,6 +23,10 @@ if(WIN32)
   file(GLOB arch_headers "win32/*.h")
   file(GLOB arch_sources "win32/*.cpp")
 
+  if(BUILD_MINIMAL_CLIENT)
+    list(FILTER arch_sources EXCLUDE REGEX "win32/(DaemonApp|DaemonIpcServer)\\.cpp$")
+  endif()
+
   if(HAVE_WINTOAST)
     list(APPEND arch_sources ${WINTOAST_DIR}/src/wintoastlib.cpp)
   endif()
@@ -30,6 +34,10 @@ if(WIN32)
 elseif(UNIX)
   file(GLOB arch_headers "unix/*.h")
   file(GLOB arch_sources "unix/*.cpp")
+
+  if(BUILD_MINIMAL_CLIENT)
+    list(FILTER arch_sources EXCLUDE REGEX "unix/(DeskflowXkbKeyboard|X11LayoutsParser)\\.cpp$")
+  endif()
 endif()
 
 list(APPEND sources ${arch_sources})
@@ -41,7 +49,7 @@ endif()
   
 add_library(${lib_name} STATIC ${sources})
 
-if(WIN32)
+if(WIN32 AND NOT BUILD_MINIMAL_CLIENT)
 
   target_link_libraries(${lib_name} PRIVATE Qt6::Core Qt6::Network)
 
@@ -61,7 +69,7 @@ elseif(UNIX)
     ${cli11_lib}
     ${tomlplusplus_lib})
 
-  if(NOT APPLE)
+  if(NOT APPLE AND NOT BUILD_MINIMAL_CLIENT)
     target_link_libraries(${lib_name} PRIVATE Qt6::Xml)
 
     find_package(PkgConfig)

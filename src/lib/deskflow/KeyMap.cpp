@@ -376,7 +376,7 @@ KeyModifierMask KeyMap::getCommandModifiers() const
   // we currently treat ctrl, alt, meta and super as command modifiers.
   // some platforms may have a more limited set (OS X only needs Alt)
   // but this works anyway.
-  return KeyModifierControl | KeyModifierAlt | KeyModifierAltGr | KeyModifierMeta | KeyModifierSuper;
+  return KeyModifierControl | KeyModifierAlt | KeyModifierMeta | KeyModifierSuper;
 }
 
 void KeyMap::collectButtons(const ModifierToKeys &mods, ButtonToKeyMap &keys)

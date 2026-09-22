@@ -41,7 +41,8 @@ class MSWindowsScreen : public PlatformScreen
 public:
   MSWindowsScreen(
       bool isPrimary, bool noHooks, bool stopOnDeskSwitch, IEventQueue *events, bool enableLangSync = false,
-      deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::SERVER
+      deskflow::ClientScrollDirection scrollDirection = deskflow::ClientScrollDirection::SERVER,
+      double relativeMouseScale = 1.0
   );
   virtual ~MSWindowsScreen();
 

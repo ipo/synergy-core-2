@@ -67,7 +67,7 @@ public:
   */
   MSWindowsDesks(
       bool isPrimary, bool noHooks, const IScreenSaver *screensaver, IEventQueue *events, IJob *updateKeys,
-      bool stopOnDeskSwitch
+      bool stopOnDeskSwitch, double relativeMouseScale
   );
   ~MSWindowsDesks();
 
@@ -214,7 +214,7 @@ private:
 
   // message handlers
   void deskMouseMove(SInt32 x, SInt32 y) const;
-  void deskMouseRelativeMove(SInt32 dx, SInt32 dy) const;
+  void deskMouseRelativeMove(SInt32 dx, SInt32 dy);
   void deskEnter(Desk *desk);
   void deskLeave(Desk *desk, HKL keyLayout);
   void deskThread(void *vdesk);
@@ -292,4 +292,8 @@ private:
 
   // true if program should stop on desk switch.
   bool m_stopOnDeskSwitch;
+
+  double m_relativeMouseScale;
+  double m_relativeMouseXCarry;
+  double m_relativeMouseYCarry;
 };

@@ -45,5 +45,7 @@ configure_build()
 configure_libs()
 configure_packaging()
 
-add_subdirectory(${SYNERGY_EXTRA_ROOT})
+if(NOT BUILD_MINIMAL_CLIENT)
+  add_subdirectory(${SYNERGY_EXTRA_ROOT})
+endif()
 add_subdirectory(src)

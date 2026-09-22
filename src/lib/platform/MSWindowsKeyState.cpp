@@ -205,7 +205,7 @@ const KeyID MSWindowsKeyState::s_virtualKey[] = {
     /* 0x0a2 */ {kKeyControl_L},        // VK_LCONTROL
     /* 0x0a3 */ {kKeyControl_R},        // VK_RCONTROL
     /* 0x0a4 */ {kKeyAlt_L},            // VK_LMENU
-    /* 0x0a5 */ {kKeyAlt_R},            // VK_RMENU
+    /* 0x0a5 */ {kKeyAltGr},            // VK_RMENU
     /* 0x0a6 */ {kKeyNone},             // VK_BROWSER_BACK
     /* 0x0a7 */ {kKeyNone},             // VK_BROWSER_FORWARD
     /* 0x0a8 */ {kKeyNone},             // VK_BROWSER_REFRESH
@@ -462,7 +462,7 @@ const KeyID MSWindowsKeyState::s_virtualKey[] = {
     /* 0x1a2 */ {kKeyControl_L},    // VK_LCONTROL
     /* 0x1a3 */ {kKeyControl_R},    // VK_RCONTROL
     /* 0x1a4 */ {kKeyAlt_L},        // VK_LMENU
-    /* 0x1a5 */ {kKeyAlt_R},        // VK_RMENU
+    /* 0x1a5 */ {kKeyAltGr},        // VK_RMENU
     /* 0x1a6 */ {kKeyWWWBack},      // VK_BROWSER_BACK
     /* 0x1a7 */ {kKeyWWWForward},   // VK_BROWSER_FORWARD
     /* 0x1a8 */ {kKeyWWWRefresh},   // VK_BROWSER_REFRESH
@@ -1086,7 +1086,7 @@ void MSWindowsKeyState::getKeyMap(deskflow::KeyMap &keyMap)
           static const Modifier modifiers[] = {
               {VK_SHIFT, VK_SHIFT, 0x80u, KeyModifierShift},
               {VK_CAPITAL, VK_CAPITAL, 0x01u, KeyModifierCapsLock},
-              {VK_CONTROL, VK_MENU, 0x80u, KeyModifierControl | KeyModifierAlt}
+              {VK_CONTROL, VK_MENU, 0x80u, KeyModifierAltGr}
           };
           static const size_t s_numModifiers = sizeof(modifiers) / sizeof(modifiers[0]);
           static const size_t s_numCombinations = 1 << s_numModifiers;
@@ -1098,7 +1098,7 @@ void MSWindowsKeyState::getKeyMap(deskflow::KeyMap &keyMap)
             for (size_t k = 0; k < s_numModifiers; ++k) {
               // if ((j & (1 << k)) != 0) {
               //  http://msdn.microsoft.com/en-us/library/ke55d167.aspx
-              if ((j & (1i64 << k)) != 0) {
+              if ((j & (1LL << k)) != 0) {
                 keys[modifiers[k].m_vk1] = modifiers[k].m_state;
                 keys[modifiers[k].m_vk2] = modifiers[k].m_state;
               } else {
@@ -1121,7 +1121,7 @@ void MSWindowsKeyState::getKeyMap(deskflow::KeyMap &keyMap)
               for (size_t j = 0; j < s_numCombinations; ++j) {
                 // if (id[j] != id[j ^ (1u << k)]) {
                 //  http://msdn.microsoft.com/en-us/library/ke55d167.aspx
-                if (id[j] != id[j ^ (1ui64 << k)]) {
+                if (id[j] != id[j ^ (1ULL << k)]) {
                   item.m_sensitive |= modifiers[k].m_mask;
                   break;
                 }
@@ -1135,7 +1135,7 @@ void MSWindowsKeyState::getKeyMap(deskflow::KeyMap &keyMap)
               item.m_id = id[j];
               item.m_required = 0;
               for (size_t k = 0; k < s_numModifiers; ++k) {
-                if ((j & (1i64 << k)) != 0) {
+                if ((j & (1LL << k)) != 0) {
                   item.m_required |= modifiers[k].m_mask;
                 }
               }

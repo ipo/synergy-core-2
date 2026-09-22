@@ -92,7 +92,7 @@ MSWindowsScreen *MSWindowsScreen::s_screen = NULL;
 
 MSWindowsScreen::MSWindowsScreen(
     bool isPrimary, bool noHooks, bool stopOnDeskSwitch, IEventQueue *events, bool enableLangSync,
-    deskflow::ClientScrollDirection scrollDirection
+    deskflow::ClientScrollDirection scrollDirection, double relativeMouseScale
 )
     : PlatformScreen(events, scrollDirection),
       m_isPrimary(isPrimary),
@@ -140,7 +140,7 @@ MSWindowsScreen::MSWindowsScreen(
     m_screensaver = new MSWindowsScreenSaver();
     m_desks = new MSWindowsDesks(
         m_isPrimary, m_noHooks, m_screensaver, m_events,
-        new TMethodJob<MSWindowsScreen>(this, &MSWindowsScreen::updateKeysCB), stopOnDeskSwitch
+        new TMethodJob<MSWindowsScreen>(this, &MSWindowsScreen::updateKeysCB), stopOnDeskSwitch, relativeMouseScale
     );
     m_keyState = new MSWindowsKeyState(
         m_desks, getEventTarget(), m_events, AppUtil::instance().getKeyboardLayoutList(), enableLangSync

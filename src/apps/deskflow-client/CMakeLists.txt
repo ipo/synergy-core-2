@@ -49,19 +49,38 @@ if(ADD_HEADERS_TO_SOURCES)
 endif()
 
 add_executable(${target} ${sources})
-target_link_libraries(
-  ${target}
-  arch
-  base
-  client
-  io
-  mt
-  net
-  ipc
-  platform
-  server
-  app
-  ${libs})
+
+if(MINGW)
+  target_link_libraries(
+    ${target}
+    -Wl,--start-group
+    arch
+    base
+    client
+    io
+    mt
+    net
+    ipc
+    platform
+    server
+    app
+    -Wl,--end-group
+    ${libs})
+else()
+  target_link_libraries(
+    ${target}
+    arch
+    base
+    client
+    io
+    mt
+    net
+    ipc
+    platform
+    server
+    app
+    ${libs})
+endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND BUILD_GUI)
   set_target_properties(${target} PROPERTIES

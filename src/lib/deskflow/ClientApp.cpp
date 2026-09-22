@@ -122,6 +122,7 @@ void ClientApp::help()
   std::stringstream help;
   help << "Usage: " << args().m_pname << " [--address <address>]"
        << " [--yscroll <delta>]"
+       << " [--relative-mouse-scale <factor>]"
        << " [--sync-language]"
        << " [--invert-scroll]"
        << " [--host]"
@@ -139,6 +140,8 @@ void ClientApp::help()
        << "  -a, --address <address>  local network interface address.\n"
        << HELP_COMMON_INFO_1 << HELP_SYS_INFO << "      --yscroll <delta>    defines the vertical scrolling delta,\n"
        << "                             which is 120 by default.\n"
+       << "      --relative-mouse-scale <factor>\n"
+       << "                             scales relative mouse movement (1.0 by default).\n"
        << "      --sync-language      enable language synchronization.\n"
        << "      --invert-scroll      invert scroll direction on this\n"
        << "                             computer.\n"
@@ -185,7 +188,7 @@ deskflow::Screen *ClientApp::createScreen()
   return new deskflow::Screen(
       new MSWindowsScreen(
           false, args().m_noHooks, args().m_stopOnDeskSwitch, m_events, args().m_enableLangSync,
-          args().m_clientScrollDirection
+          args().m_clientScrollDirection, args().m_relativeMouseScale
       ),
       m_events
   );

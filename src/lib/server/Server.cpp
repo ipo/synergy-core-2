@@ -64,6 +64,8 @@ Server::Server(
       m_yDelta(0),
       m_xDelta2(0),
       m_yDelta2(0),
+      m_mouseScaleXCarry(0.0),
+      m_mouseScaleYCarry(0.0),
       m_config(&config),
       m_inputFilter(config.getInputFilter()),
       m_activeSaver(NULL),
@@ -481,6 +483,8 @@ void Server::switchScreen(BaseClientProxy *dst, SInt32 x, SInt32 y, bool forScre
 
     // cut over
     m_active = dst;
+    m_mouseScaleXCarry = 0.0;
+    m_mouseScaleYCarry = 0.0;
 
     // increment enter sequence number
     ++m_seqNum;
@@ -1758,8 +1762,29 @@ void Server::sendDragInfo(BaseClientProxy *newScreen)
 void Server::onMouseMoveSecondary(SInt32 dx, SInt32 dy)
 {
   LOG((CLOG_DEBUG2 "onMouseMoveSecondary initial %+d,%+d", dx, dy));
-  const char *envVal = std::getenv("SYNERGY_MOUSE_ADJUSTMENT");
-  if (envVal != nullptr) {
+
+  // Mouse scaling must happen here, before screen-boundary handling, so a
+  // slower secondary screen remains reachable and can still switch screens.
+  assert(m_active != NULL);
+  const auto screenName = getName(m_active);
+  const auto *screenOptions = m_config->getOptions(screenName);
+  bool hasScreenScale = false;
+  if (screenOptions != nullptr) {
+    const auto scaleOption = screenOptions->find(kOptionMouseScale);
+    if (scaleOption != screenOptions->end()) {
+      const double multiplier = static_cast<double>(scaleOption->second) / 100.0;
+      const double scaledX = dx * multiplier + m_mouseScaleXCarry;
+      const double scaledY = dy * multiplier + m_mouseScaleYCarry;
+      dx = static_cast<SInt32>(std::trunc(scaledX));
+      dy = static_cast<SInt32>(std::trunc(scaledY));
+      m_mouseScaleXCarry = scaledX - dx;
+      m_mouseScaleYCarry = scaledY - dy;
+      LOG((CLOG_DEBUG2 "scaled mouse for %s to %+d,%+d using %.2f", screenName.c_str(), dx, dy, multiplier));
+      hasScreenScale = true;
+    }
+  }
+  if (!hasScreenScale && std::getenv("SYNERGY_MOUSE_ADJUSTMENT") != nullptr) {
+    const char *envVal = std::getenv("SYNERGY_MOUSE_ADJUSTMENT");
     try {
       double multiplier = std::stod(envVal);                                // Convert to double
       SInt32 adjustedDx = static_cast<SInt32>(std::round(dx * multiplier)); // Apply multiplier and round
@@ -1771,12 +1796,9 @@ void Server::onMouseMoveSecondary(SInt32 dx, SInt32 dy)
       // Log the error message from the exception
       LOG((CLOG_ERR "Invalid DESKFLOW_MOUSE_ADJUSTMENT value: %s. Exception: %s", envVal, e.what()));
     }
-  } else {
-    LOG((CLOG_DEBUG1 "SYNERGY_MOUSE_ADJUSTMENT not set, using original values %+d,%+d", dx, dy));
   }
 
   // mouse move on secondary (client's) screen
-  assert(m_active != NULL);
   if (m_active == m_primaryClient) {
     // stale event -- we're actually on the primary screen
     return;

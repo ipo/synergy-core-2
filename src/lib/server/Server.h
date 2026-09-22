@@ -452,6 +452,10 @@ private:
   SInt32 m_xDelta, m_yDelta;
   SInt32 m_xDelta2, m_yDelta2;
 
+  // fractional relative motion retained when a per-screen mouse scale is
+  // below one.  Reset when entering another screen.
+  double m_mouseScaleXCarry, m_mouseScaleYCarry;
+
   // current configuration
   ServerConfig *m_config;
 

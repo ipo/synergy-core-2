@@ -296,7 +296,8 @@ bool SecureSocket::loadCertificates(String &filename)
     SslLogger::logError("tls certificate is not specified");
     return false;
   } else {
-    std::ifstream file(deskflow::filesystem::path(filename));
+    const auto filePath = deskflow::filesystem::path(filename);
+    std::ifstream file(filePath.c_str());
     bool exist = file.good();
     file.close();
 
@@ -647,7 +648,8 @@ bool SecureSocket::verifyCertFingerprint()
   // check if this fingerprint exist
   String fileLine;
   std::ifstream file;
-  file.open(deskflow::filesystem::path(trustedServersFilename));
+  const auto trustedServersPath = deskflow::filesystem::path(trustedServersFilename);
+  file.open(trustedServersPath.c_str());
 
   bool isValid = false;
   if (file.is_open()) {

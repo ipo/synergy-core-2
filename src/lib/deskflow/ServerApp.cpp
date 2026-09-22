@@ -234,7 +234,8 @@ bool ServerApp::loadConfig(const String &pathname)
   try {
     // load configuration
     LOG((CLOG_DEBUG "opening configuration \"%s\"", pathname.c_str()));
-    std::ifstream configStream(deskflow::filesystem::path(pathname));
+    const auto configPath = deskflow::filesystem::path(pathname);
+    std::ifstream configStream(configPath.c_str());
     if (!configStream.is_open()) {
       // report failure to open configuration as a debug message
       // since we try several paths and we expect some to be

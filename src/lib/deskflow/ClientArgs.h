@@ -38,6 +38,7 @@ public:
 
 public:
   int m_yscroll = 0;
+  double m_relativeMouseScale = 1.0;
   bool m_enableLangSync = false; /// @brief Should keyboard input be in same language as on server
 
   /**

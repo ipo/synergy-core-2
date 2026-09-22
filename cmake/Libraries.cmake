@@ -25,14 +25,18 @@ macro(configure_libs)
     configure_windows_libs()
   endif()
 
-  find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
-  
-  set(CMAKE_AUTOMOC ON)
-  set(CMAKE_AUTOUIC ON)
-  set(CMAKE_AUTORCC ON)
+  if(NOT BUILD_MINIMAL_CLIENT)
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
+
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+  endif()
 
   configure_python()
-  configure_qt()
+  if(NOT BUILD_MINIMAL_CLIENT)
+    configure_qt()
+  endif()
   configure_openssl()
   configure_coverage()
 
@@ -141,7 +145,7 @@ macro(configure_unix_libs)
     configure_wayland_libs()
 
     find_package(PkgConfig)
-    if(PKG_CONFIG_FOUND)
+    if(PKG_CONFIG_FOUND AND NOT BUILD_MINIMAL_CLIENT)
       pkg_check_modules(lib_glib REQUIRED IMPORTED_TARGET glib-2.0)
       pkg_search_module(PC_GDKPIXBUF gdk-pixbuf-2.0)
 
@@ -151,7 +155,7 @@ macro(configure_unix_libs)
       pkg_check_modules(lib_notify REQUIRED IMPORTED_TARGET libnotify)
 
       add_definitions(-DHAVE_GDK_PIXBUF=1 -DHAVE_LIBNOTIFY=1)
-    else()
+    elseif(NOT BUILD_MINIMAL_CLIENT)
       message(WARNING "pkg-config not found, skipping libnotify and gdk-pixbuf")
     endif()
   endif()
@@ -426,7 +430,7 @@ macro(configure_xorg_libs)
 
   endif()
 
-  if(!X11_xkbfile_FOUND)
+  if(NOT BUILD_MINIMAL_CLIENT AND NOT X11_xkbfile_FOUND)
     message(FATAL_ERROR "Missing library: xkbfile")
   endif()
 
@@ -434,12 +438,10 @@ macro(configure_xorg_libs)
 
     # Xtxt depends on X11.
     set(HAVE_X11)
-    list(
-      APPEND
-      libs
-      Xtst
-      X11
-      xkbfile)
+    list(APPEND libs Xtst X11)
+    if(NOT BUILD_MINIMAL_CLIENT)
+      list(APPEND libs xkbfile)
+    endif()
 
   else()
 
@@ -480,24 +482,29 @@ macro(configure_windows_libs)
 
   configure_wintoast()
 
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} /MP /D _BIND_TO_CURRENT_VCLIBS_VERSION=1")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /O2 /Ob2")
+  if(MSVC)
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} /MP /D _BIND_TO_CURRENT_VCLIBS_VERSION=1")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD /O2 /Ob2")
 
-  list(
-    APPEND
-    libs
-    Wtsapi32
-    Userenv
-    Wininet
-    comsuppw
-    Shlwapi)
+    list(
+      APPEND
+      libs
+      Wtsapi32
+      Userenv
+      Wininet
+      comsuppw
+      Shlwapi)
 
-  add_definitions(
-    /DWIN32
-    /D_WINDOWS
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_XKEYCHECK_H)
+    add_definitions(
+      /DWIN32
+      /D_WINDOWS
+      /D_CRT_SECURE_NO_WARNINGS
+      /D_XKEYCHECK_H)
+  else()
+    list(APPEND libs Wtsapi32 Userenv Wininet Shlwapi)
+    add_definitions(-DWIN32 -D_WINDOWS -D_CRT_SECURE_NO_WARNINGS -D_XKEYCHECK_H)
+  endif()
 
   configure_file(${PROJECT_SOURCE_DIR}/res/win/version.rc.in
                  ${PROJECT_BINARY_DIR}/src/version.rc @ONLY)

@@ -4,7 +4,7 @@ https://learn.microsoft.com/en-us/windows/win32/menurc/versioninfo-resource?redi
 */
 
 #include <windows.h>
-#include <verrsrc.h>
+#include <winver.h>
 
 #define VER_FILEVERSION             @DESKFLOW_VERSION_MS_CSV@
 #define VER_FILEVERSION_STR         "@DESKFLOW_VERSION_MS@\0"

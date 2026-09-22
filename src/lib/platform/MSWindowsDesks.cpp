@@ -31,6 +31,7 @@
 #include "platform/MSWindowsScreen.h"
 #include "platform/dfwhook.h"
 
+#include <cmath>
 #include <malloc.h>
 
 // these are only defined when WINVER >= 0x0500
@@ -118,7 +119,7 @@ static void send_mouse_input(DWORD dwFlags, DWORD dx, DWORD dy, DWORD dwData)
 
 MSWindowsDesks::MSWindowsDesks(
     bool isPrimary, bool noHooks, const IScreenSaver *screensaver, IEventQueue *events, IJob *updateKeys,
-    bool stopOnDeskSwitch
+    bool stopOnDeskSwitch, double relativeMouseScale
 )
     : m_isPrimary(isPrimary),
       m_noHooks(noHooks),
@@ -139,7 +140,10 @@ MSWindowsDesks::MSWindowsDesks(
       m_deskReady(&m_mutex, false),
       m_updateKeys(updateKeys),
       m_events(events),
-      m_stopOnDeskSwitch(stopOnDeskSwitch)
+      m_stopOnDeskSwitch(stopOnDeskSwitch),
+      m_relativeMouseScale(relativeMouseScale),
+      m_relativeMouseXCarry(0.0),
+      m_relativeMouseYCarry(0.0)
 {
 
   m_cursor = createBlankCursor();
@@ -446,7 +450,7 @@ void MSWindowsDesks::deskMouseMove(SInt32 x, SInt32 y) const
   );
 }
 
-void MSWindowsDesks::deskMouseRelativeMove(SInt32 dx, SInt32 dy) const
+void MSWindowsDesks::deskMouseRelativeMove(SInt32 dx, SInt32 dy)
 {
   // relative moves are subject to cursor acceleration which we don't
   // want.so we disable acceleration, do the relative move, then
@@ -469,8 +473,18 @@ void MSWindowsDesks::deskMouseRelativeMove(SInt32 dx, SInt32 dy) const
                    SystemParametersInfo(SPI_SETMOUSESPEED, 0, newSpeed + 3, 0);
   }
 
+  // Retain fractional movement so scales below 1.0 remain smooth for small deltas.
+  const double scaledX = dx * m_relativeMouseScale + m_relativeMouseXCarry;
+  const double scaledY = dy * m_relativeMouseScale + m_relativeMouseYCarry;
+  const SInt32 adjustedDx = static_cast<SInt32>(std::trunc(scaledX));
+  const SInt32 adjustedDy = static_cast<SInt32>(std::trunc(scaledY));
+  m_relativeMouseXCarry = scaledX - adjustedDx;
+  m_relativeMouseYCarry = scaledY - adjustedDy;
+
   // move relative to mouse position
-  send_mouse_input(MOUSEEVENTF_MOVE, dx, dy, 0);
+  if (adjustedDx != 0 || adjustedDy != 0) {
+    send_mouse_input(MOUSEEVENTF_MOVE, adjustedDx, adjustedDy, 0);
+  }
 
   // restore mouse speed & acceleration
   if (accelChanged) {
