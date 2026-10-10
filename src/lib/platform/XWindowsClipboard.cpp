@@ -56,7 +56,9 @@ XWindowsClipboard::XWindowsClipboard(Display *display, Window window, ClipboardI
   m_atomInteger = XInternAtom(m_display, "INTEGER", False);
   m_atomAtom = XInternAtom(m_display, "ATOM", False);
   m_atomAtomPair = XInternAtom(m_display, "ATOM_PAIR", False);
-  m_atomData = XInternAtom(m_display, "CLIP_TEMPORARY", False);
+  // Qt reserves CLIP_TEMPORARY for Motif clients and refuses INCR transfers.
+  // Use our own property so large clipboard images can be read in chunks.
+  m_atomData = XInternAtom(m_display, "SYNERGY_CLIPBOARD_DATA", False);
   m_atomINCR = XInternAtom(m_display, "INCR", False);
   m_atomMotifClipLock = XInternAtom(m_display, "_MOTIF_CLIP_LOCK", False);
   m_atomMotifClipHeader = XInternAtom(m_display, "_MOTIF_CLIP_HEADER", False);
